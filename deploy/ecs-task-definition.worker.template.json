@@ -1,0 +1,49 @@
+{
+  "family": "cvs-sql-prefect-worker",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/cvs-sql-worker-task-role",
+  "containerDefinitions": [
+    {
+      "name": "prefect-worker",
+      "image": "<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/<ECR_REPO>:<TAG>",
+      "essential": true,
+      "environment": [
+        { "name": "ETL_NO_GUI", "value": "1" },
+        { "name": "DO_NOT_TRACK", "value": "1" },
+        { "name": "PREFECT_WORK_POOL", "value": "etl-pool" },
+        { "name": "PREFECT_WORKER_TYPE", "value": "process" },
+        { "name": "AWS_REGION", "value": "<REGION>" }
+      ],
+      "secrets": [
+        {
+          "name": "PREFECT_API_URL",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:<SECRET_NAME_PREFECT_API_URL>"
+        },
+        {
+          "name": "PREFECT_API_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:<SECRET_NAME_PREFECT_API_KEY>"
+        },
+        {
+          "name": "SUPABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:<SECRET_NAME_SUPABASE_URL>"
+        },
+        {
+          "name": "SUPABASE_KEY",
+          "valueFrom": "arn:aws:secretsmanager:<REGION>:<ACCOUNT_ID>:secret:<SECRET_NAME_SUPABASE_KEY>"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/cvs-sql-prefect-worker",
+          "awslogs-region": "<REGION>",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}

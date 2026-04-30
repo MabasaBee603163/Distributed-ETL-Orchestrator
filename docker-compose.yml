@@ -1,0 +1,37 @@
+services:
+  prefect-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    image: cvs-sql-prefect-worker:local
+    restart: unless-stopped
+    environment:
+      # Core Prefect connectivity
+      PREFECT_API_URL: ${PREFECT_API_URL}
+      PREFECT_API_KEY: ${PREFECT_API_KEY}
+      PREFECT_WORK_POOL: ${PREFECT_WORK_POOL:-etl-pool}
+      PREFECT_WORKER_TYPE: ${PREFECT_WORKER_TYPE:-process}
+      # Optional: space-separated work queue names
+      PREFECT_WORK_QUEUES: ${PREFECT_WORK_QUEUES:-}
+      PREFECT_WORKER_CONCURRENCY_LIMIT: ${PREFECT_WORKER_CONCURRENCY_LIMIT:-}
+
+      # Runtime secrets your flows read via python-dotenv / os.environ
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      SUPABASE_TABLE: ${SUPABASE_TABLE}
+
+      # Optional paths used by flows
+      CSV_PATH: ${CSV_PATH:-data/input.csv}
+      UPSERT: ${UPSERT:-true}
+
+      # Optional API route defaults (only needed if you deploy API-bound deployments)
+      API_URL: ${API_URL:-}
+      API_METHOD: ${API_METHOD:-GET}
+      API_HEADERS_JSON: ${API_HEADERS_JSON:-}
+      API_PARAMS_JSON: ${API_PARAMS_JSON:-}
+      API_JSON_BODY_JSON: ${API_JSON_BODY_JSON:-}
+
+      AWS_REGION: ${AWS_REGION:-}
+
+      # Avoid Tk GUI inside containers
+      ETL_NO_GUI: "1"

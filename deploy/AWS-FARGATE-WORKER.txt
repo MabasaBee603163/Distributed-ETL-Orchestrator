@@ -1,0 +1,54 @@
+AWS hosting (typical): Prefect API/Cloud + ECS/Fargate worker
+============================================================
+
+What you are deploying
+- A long-running **Prefect Worker** container that polls a **work pool** and executes your flow runs.
+- This repo’s worker image: `docker/Dockerfile.worker`
+
+Prereqs
+- A Prefect control plane:
+  - **Prefect Cloud** (simplest), OR
+  - self-hosted **Prefect server** with a publicly reachable `PREFECT_API_URL`
+- A Docker registry:
+  - **ECR** (recommended on AWS)
+- IAM permissions for the task role to read secrets (if using AWS Secrets Manager)
+
+Build & push image to ECR (outline)
+1) Create an ECR repository, e.g. `cvs-sql-prefect-worker`
+2) Authenticate docker to ECR (`aws ecr get-login-password ... | docker login ...`)
+3) Build:
+   docker build -f docker/Dockerfile.worker -t cvs-sql-prefect-worker:latest .
+4) Tag & push to ECR:
+   docker tag cvs-sql-prefect-worker:latest <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/cvs-sql-prefect-worker:latest
+   docker push <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/cvs-sql-prefect-worker:latest
+
+Prefect side (one-time)
+- Create a work pool named the same as `PREFECT_WORK_POOL` (default in `.env.example`: `etl-pool`)
+- Create deployments for your flows that target that work pool/queues
+  (work pool type should match the worker: typically `process` for this container)
+
+ECS/Fargate task (runtime env vars)
+Required:
+- PREFECT_API_URL
+- PREFECT_WORK_POOL
+
+Often required (Prefect Cloud):
+- PREFECT_API_KEY
+
+Application secrets (your flows):
+- SUPABASE_URL
+- SUPABASE_KEY
+(plus API_* if you run API-sourced deployments)
+
+Best practice on AWS
+- Store secrets in **AWS Secrets Manager** (or SSM Parameter Store) and inject into the task as `secrets`
+- Use an ECS **task role** to grant read access to those secrets
+
+Local docker compose
+- See `docker-compose.yml` in the repo root
+- Run with an env file:
+  docker compose --env-file .env up --build
+
+Notes
+- Container sets `ETL_NO_GUI=1` (Tk UI is for local use only)
+- The worker image entrypoint runs: `prefect worker start --pool <PREFECT_WORK_POOL> --type <PREFECT_WORKER_TYPE>`

@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.git/
+.prefect/
+profiles/
+*.log
+.env
+.env.*
+Untitled
